@@ -1,6 +1,17 @@
 import ConfigParser
 import tweepy
 import json
+import os.path
+
+jsonFile = "data.json"
+jsonKey = "lastTweetID"
+
+if os.path.isfile(jsonFile) is False:
+  lastTweetID = 0
+else:
+  with open(jsonFile) as data_file:    
+    data = json.load(data_file)
+    lastTweetID = data[jsonKey]
 
 config = ConfigParser.ConfigParser()
 config.read('config.ini')
@@ -15,18 +26,24 @@ auth = tweepy.OAuthHandler(consumerKey, consumerSecret)
 auth.set_access_token(accessToken, accessSecret)
 
 api = tweepy.API(auth)
-tweets = 
 
 for tweet in tweepy.Cursor(api.search,
                            q="#artificialintelligence filter:links",
-                           rpp=100,
-                           result_type="recent",
-                           include_entities=True,
-                           lang="en").items(5):
-  print tweet.text
-  print
+                           rpp=20,
+                           result_type="popular",
+                           since_id=lastTweetID,
+                           lang="en").items(3):
+  tweetID = tweet.id
 
-# data = {"lastTweet": 49765987498479}
+  if lastTweetID < tweetID:
+    lastTweetID = tweetID
 
-# with open('data.json', 'w') as outfile:
-#     json.dump(data, outfile)
+  try:
+    api.retweet(tweetID)
+  except Exception, e:
+    pass
+
+data = {jsonKey: lastTweetID}
+
+with open(jsonFile, 'w') as outfile:
+    json.dump(data, outfile)
