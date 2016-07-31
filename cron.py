@@ -83,7 +83,7 @@ def retweetNext():
 
       print 'retweeted'
       insertRetweet(tweetID)
-      logCron('Retweeted')
+      # logCron('Retweeted')
       return True
     else:
       print 'already retweeted and in db'
@@ -93,5 +93,5 @@ def retweetNext():
   return False
 
 print 'run function'
-logCron('Cron run')
+# logCron('Cron run')
 retweetNext()
