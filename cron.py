@@ -3,9 +3,12 @@ import tweepy
 from pymongo import MongoClient
 import time
 import datetime
+import os.path
+
+fn = os.path.join(os.path.dirname(__file__), 'config.ini')
 
 config = ConfigParser.ConfigParser()
-config.read('config.ini')
+config.read(fn)
 
 Config = ConfigParser.ConfigParser()
 consumerKey = config.get('twitter', 'consumerKey')
