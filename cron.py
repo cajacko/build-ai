@@ -1,7 +1,8 @@
 import ConfigParser
 import tweepy
 from pymongo import MongoClient
-
+import time
+import datetime
 
 config = ConfigParser.ConfigParser()
 config.read('config.ini')
@@ -27,6 +28,17 @@ def insertRetweet(tweetID):
   coll.insert_one(
     {
       "id": tweetID
+    }
+  )
+
+def logCron(message):
+  ts = time.time()
+  date = datetime.datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+
+  db.log.insert_one(
+    {
+      "date": date,
+      "message": message
     }
   )
 
@@ -63,16 +75,20 @@ def retweetNext():
           continue
         else:
           print e
+          logCron(e.message[0]['code'])
           return False
 
       print 'retweeted'
       insertRetweet(tweetID)
+      logCron('Retweeted')
       return True
     else:
       print 'already retweeted and in db'
 
+  logCron('Ran out of tweets')
   print 'ran out of tweets'
   return False
 
 print 'run function'
+logCron('Cron run')
 retweetNext()
