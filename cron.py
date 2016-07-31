@@ -1,17 +1,7 @@
 import ConfigParser
 import tweepy
-import json
-import os.path
+from pymongo import MongoClient
 
-jsonFile = "data.json"
-jsonKey = "lastTweetID"
-
-if os.path.isfile(jsonFile) is False:
-  lastTweetID = 0
-else:
-  with open(jsonFile) as data_file:    
-    data = json.load(data_file)
-    lastTweetID = data[jsonKey]
 
 config = ConfigParser.ConfigParser()
 config.read('config.ini')
@@ -21,29 +11,54 @@ consumerKey = config.get('twitter', 'consumerKey')
 consumerSecret = config.get('twitter', 'consumerSecret')
 accessToken = config.get('twitter', 'accessToken')
 accessSecret = config.get('twitter', 'accessSecret')
+mongodbURI = config.get('mongodb', 'uri')
+
+
+client = MongoClient(mongodbURI)
+db = client.buildai
+coll = db.retweets
 
 auth = tweepy.OAuthHandler(consumerKey, consumerSecret)
 auth.set_access_token(accessToken, accessSecret)
 
 api = tweepy.API(auth)
 
-for tweet in tweepy.Cursor(api.search,
-                           q="#artificialintelligence filter:links",
-                           rpp=20,
-                           result_type="popular",
-                           since_id=lastTweetID,
-                           lang="en").items(3):
-  tweetID = tweet.id
+def insertRetweet(tweetID):
+  coll.insert_one(
+    {
+      "id": tweetID
+    }
+  )
 
-  if lastTweetID < tweetID:
-    lastTweetID = tweetID
+def hasNotRetweeted(tweetID):
+  if coll.find({'id': tweetID}).count() > 0:
+    return False
+  else:
+    return True
 
-  try:
-    api.retweet(tweetID)
-  except Exception, e:
-    pass
+def retweetNext():
+  for tweet in tweepy.Cursor(api.search,
+                             q="#artificialintelligence filter:links",
+                             rpp=100,
+                             result_type="popular",
+                             lang="en").items(100):
+    tweetID = tweet.id
 
-data = {jsonKey: lastTweetID}
+    if hasNotRetweeted(tweetID):
+      try:
+        api.retweet(tweetID)
+      except Exception, e:
+        pass
 
-with open(jsonFile, 'w') as outfile:
-    json.dump(data, outfile)
+        if e.message[0]['code'] == 327:
+          insertRetweet(tweetID)
+          continue
+        else:
+          return False
+
+      insertRetweet(tweetID)
+      return True
+
+  return False
+
+retweetNext()
