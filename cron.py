@@ -42,7 +42,7 @@ def retweetNext():
   for tweet in tweepy.Cursor(api.search,
                              q="#artificialintelligence filter:links",
                              rpp=100,
-                             result_type="popular",
+                             result_type="mixed",
                              lang="en").items(100):
     tweetID = tweet.id
     print tweetID
