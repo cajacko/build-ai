@@ -37,28 +37,42 @@ def hasNotRetweeted(tweetID):
     return True
 
 def retweetNext():
+  print 'retweetNext init'
+
   for tweet in tweepy.Cursor(api.search,
                              q="#artificialintelligence filter:links",
                              rpp=100,
                              result_type="popular",
                              lang="en").items(100):
     tweetID = tweet.id
+    print tweetID
 
     if hasNotRetweeted(tweetID):
+      print 'is not in db'
+
       try:
         api.retweet(tweetID)
       except Exception, e:
         pass
+        print 'tweepy error'
 
         if e.message[0]['code'] == 327:
+          print 'already retweeted'
+
           insertRetweet(tweetID)
           continue
         else:
+          print e
           return False
 
+      print 'retweeted'
       insertRetweet(tweetID)
       return True
+    else:
+      print 'already retweeted and in db'
 
+  print 'ran out of tweets'
   return False
 
+print 'run function'
 retweetNext()
